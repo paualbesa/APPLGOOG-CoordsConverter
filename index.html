@@ -38,6 +38,11 @@ body {
   border: 1px solid var(--border);
 }
 
+.logo {
+  height: 64px;
+  margin-bottom: 16px;
+}
+
 h1 {
   margin: 0 0 10px;
   font-size: 26px;
@@ -117,6 +122,9 @@ button.secondary {
 
 <body>
 <div class="card">
+  <<a href="https://albesatechsolutions.es">
+    <img src="ats.png" alt="Logo" class="logo">
+  </a>
   <h1>Convertidor Apple ↔ Google Maps</h1>
   <p>Pega cualquier enlace real de Maps. Detectamos la coordenada correcta y generamos el otro enlace.</p>
 
@@ -128,10 +136,6 @@ button.secondary {
   </div>
 
   <div id="output" class="result"></div>
-
-  <div class="footer">
-    Funciona 100% en tu navegador · Gratis · Sin servidores
-  </div>
 </div>
 
 <script>
