@@ -7,11 +7,12 @@
 
 <style>
 :root {
-  --accent: #ff7a00;
-  --bg: #0f0f12;
-  --card: #1a1a20;
-  --text: #f2f2f2;
-  --muted: #b0b0b0;
+  --accent: #ff8a1f;
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --text: #1e1e1e;
+  --muted: #6b7280;
+  --border: #e5e7eb;
 }
 
 * { box-sizing: border-box; }
@@ -19,7 +20,7 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: radial-gradient(circle at top, #1c1c22, #0b0b0e);
+  background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   display: flex;
@@ -33,7 +34,8 @@ body {
   background: var(--card);
   border-radius: 16px;
   padding: 28px;
-  box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  border: 1px solid var(--border);
 }
 
 h1 {
@@ -51,10 +53,10 @@ textarea {
   min-height: 90px;
   resize: vertical;
   border-radius: 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   padding: 14px;
   font-size: 15px;
-  background: #0c0c10;
+  background: #fafafa;
   color: var(--text);
 }
 
@@ -78,12 +80,12 @@ button {
   font-size: 15px;
   cursor: pointer;
   background: var(--accent);
-  color: #000;
+  color: #fff;
   font-weight: 600;
 }
 
 button.secondary {
-  background: #2a2a32;
+  background: #f3f4f6;
   color: var(--text);
 }
 
@@ -91,8 +93,8 @@ button.secondary {
   margin-top: 22px;
   padding: 16px;
   border-radius: 12px;
-  background: #101015;
-  border: 1px solid #2a2a32;
+  background: #fafafa;
+  border: 1px solid var(--border);
 }
 
 .result a {
@@ -101,7 +103,7 @@ button.secondary {
 }
 
 .error {
-  color: #ff6b6b;
+  color: #dc2626;
 }
 
 .footer {
@@ -116,19 +118,19 @@ button.secondary {
 <body>
 <div class="card">
   <h1>Convertidor Apple ↔ Google Maps</h1>
-  <p>Pega cualquier enlace real de Maps (móvil o escritorio). Extraemos las coordenadas y generamos el otro formato.</p>
+  <p>Pega cualquier enlace real de Maps. Detectamos la coordenada correcta y generamos el otro enlace.</p>
 
-  <textarea id="input" placeholder="Pega aquí una URL de Google Maps o Apple Maps"></textarea>
+  <textarea id="input" placeholder="Pega aquí una URL de Apple Maps o Google Maps"></textarea>
 
   <div class="buttons">
     <button onclick="convertir()">Convertir</button>
-    <button class="secondary" onclick="copiar()">Copiar resultado</button>
+    <button class="secondary" onclick="copiar()">Copiar enlace</button>
   </div>
 
   <div id="output" class="result"></div>
 
   <div class="footer">
-    Funciona 100% en tu navegador · Sin servidores · Gratis
+    Funciona 100% en tu navegador · Gratis · Sin servidores
   </div>
 </div>
 
@@ -148,7 +150,7 @@ function convertir() {
     const host = url.host.toLowerCase();
 
     const coords = extraerCoordenadas(url, input);
-    if (!coords) throw "No he podido encontrar coordenadas en la URL";
+    if (!coords) throw "No se han encontrado coordenadas en la URL";
 
     const { lat, lon } = coords;
 
@@ -156,11 +158,11 @@ function convertir() {
 
     if (host.includes("google")) {
       resultURL = `https://maps.apple.com/?ll=${lat},${lon}&q=${lat},${lon}`;
-      out.innerHTML = `🍎 Apple Maps:<br><a href="${resultURL}" target="_blank">${resultURL}</a>`;
+      out.innerHTML = `🍎 Apple Maps<br><a href="${resultURL}" target="_blank">${resultURL}</a>`;
     }
     else if (host.includes("apple")) {
       resultURL = `https://www.google.com/maps?q=${lat},${lon}`;
-      out.innerHTML = `🌐 Google Maps:<br><a href="${resultURL}" target="_blank">${resultURL}</a>`;
+      out.innerHTML = `🌐 Google Maps<br><a href="${resultURL}" target="_blank">${resultURL}</a>`;
     }
     else {
       throw "La URL no parece de Apple Maps ni Google Maps";
@@ -180,16 +182,15 @@ function copiar() {
 
 function extraerCoordenadas(url, raw) {
 
-  // 1️⃣ @lat,lon (Google desktop/mobile)
-  const atMatch = raw.match(/@(-?\d+(\.\d+)?),(-?\d+(\.\d+)?)/);
-  if (atMatch) {
-    return { lat: atMatch[1], lon: atMatch[3] };
-  }
+  // 1️⃣ Google chincheta real !3dLAT!4dLON
+  const bang = raw.match(/!3d(-?\d+(\.\d+)?)!4d(-?\d+(\.\d+)?)/);
+  if (bang) return { lat: bang[1], lon: bang[3] };
 
-  // 2️⃣ !3dLAT!4dLON (Google place URLs)
-  const bangMatch = raw.match(/!3d(-?\d+(\.\d+)?)!4d(-?\d+(\.\d+)?)/);
-  if (bangMatch) {
-    return { lat: bangMatch[1], lon: bangMatch[3] };
+  // 2️⃣ Apple Maps coordinate=lat,lon
+  const coordinate = url.searchParams.get("coordinate");
+  if (coordinate && coordinate.includes(",")) {
+    const [lat, lon] = coordinate.split(",");
+    return { lat, lon };
   }
 
   // 3️⃣ q=lat,lon
@@ -199,12 +200,16 @@ function extraerCoordenadas(url, raw) {
     return { lat, lon };
   }
 
-  // 4️⃣ ll=lat,lon (Apple Maps)
+  // 4️⃣ ll=lat,lon
   const ll = url.searchParams.get("ll");
   if (ll && ll.includes(",")) {
     const [lat, lon] = ll.split(",");
     return { lat, lon };
   }
+
+  // 5️⃣ @lat,lon (vista)
+  const at = raw.match(/@(-?\d+(\.\d+)?),(-?\d+(\.\d+)?)/);
+  if (at) return { lat: at[1], lon: at[3] };
 
   return null;
 }
