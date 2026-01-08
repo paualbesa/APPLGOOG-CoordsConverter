@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Convertidor Apple ↔ Google Maps</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 40px; }
+  input, button { width: 100%; padding: 10px; margin: 8px 0; font-size: 16px; }
+  #output { margin-top: 20px; font-weight: bold; }
+</style>
+</head>
+<body>
+  <h1>Convertidor Apple ↔ Google Maps</h1>
+
+  <label>Introduce enlace de Maps:</label>
+  <input type="text" id="urlInput" placeholder="Pega aquí tu URL">
+
+  <button onclick="convertir()">Convertir</button>
+
+  <div id="output"></div>
+
+<script>
+function convertir() {
+  const input = document.getElementById("urlInput").value.trim();
+  const out = document.getElementById("output");
+  out.textContent = "";
+
+  try {
+    const u = new URL(input);
+    const host = u.host.toLowerCase();
+
+    let lat, lon;
+
+    if (host.includes("apple.com")) {
+      const ll = u.searchParams.get("ll");
+      if (!ll) throw "No veo coordenadas ll= en URL de Apple Maps";
+      [lat, lon] = ll.split(",");
+      const google = "https://www.google.com/maps?q=" + lat + "," + lon;
+      out.innerHTML = `🔗 Google Maps: <a href="${google}" target="_blank">${google}</a>`;
+    }
+    else if (host.includes("google.com")) {
+      const q = u.searchParams.get("q");
+      if (!q) throw "No veo ?q= en URL de Google Maps";
+      [lat, lon] = q.split(",");
+      const apple = "https://maps.apple.com/?ll=" + lat + "," + lon;
+      out.innerHTML = `🍎 Apple Maps: <a href="${apple}" target="_blank">${apple}</a>`;
+    }
+    else {
+      throw "URL desconocida. Pega un enlace de Apple o Google Maps";
+    }
+  }
+  catch (e) {
+    out.textContent = "⚠️ Error: " + e;
+  }
+}
+</script>
+
+</body>
+</html>
+
