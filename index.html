@@ -2,59 +2,213 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Convertidor Apple ↔ Google Maps</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apple ↔ Google Maps Converter</title>
+
 <style>
-  body { font-family: Arial, sans-serif; margin: 40px; }
-  input, button { width: 100%; padding: 10px; margin: 8px 0; font-size: 16px; }
-  #output { margin-top: 20px; font-weight: bold; }
+:root {
+  --accent: #ff7a00;
+  --bg: #0f0f12;
+  --card: #1a1a20;
+  --text: #f2f2f2;
+  --muted: #b0b0b0;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: radial-gradient(circle at top, #1c1c22, #0b0b0e);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card {
+  width: 100%;
+  max-width: 720px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.45);
+}
+
+h1 {
+  margin: 0 0 10px;
+  font-size: 26px;
+}
+
+p {
+  margin: 0 0 20px;
+  color: var(--muted);
+}
+
+textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  border-radius: 12px;
+  border: 1px solid #333;
+  padding: 14px;
+  font-size: 15px;
+  background: #0c0c10;
+  color: var(--text);
+}
+
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+button {
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  cursor: pointer;
+  background: var(--accent);
+  color: #000;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: #2a2a32;
+  color: var(--text);
+}
+
+.result {
+  margin-top: 22px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #101015;
+  border: 1px solid #2a2a32;
+}
+
+.result a {
+  color: var(--accent);
+  word-break: break-all;
+}
+
+.error {
+  color: #ff6b6b;
+}
+
+.footer {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
 </style>
 </head>
+
 <body>
+<div class="card">
   <h1>Convertidor Apple ↔ Google Maps</h1>
+  <p>Pega cualquier enlace real de Maps (móvil o escritorio). Extraemos las coordenadas y generamos el otro formato.</p>
 
-  <label>Introduce enlace de Maps:</label>
-  <input type="text" id="urlInput" placeholder="Pega aquí tu URL">
+  <textarea id="input" placeholder="Pega aquí una URL de Google Maps o Apple Maps"></textarea>
 
-  <button onclick="convertir()">Convertir</button>
+  <div class="buttons">
+    <button onclick="convertir()">Convertir</button>
+    <button class="secondary" onclick="copiar()">Copiar resultado</button>
+  </div>
 
-  <div id="output"></div>
+  <div id="output" class="result"></div>
+
+  <div class="footer">
+    Funciona 100% en tu navegador · Sin servidores · Gratis
+  </div>
+</div>
 
 <script>
+let lastResult = "";
+
 function convertir() {
-  const input = document.getElementById("urlInput").value.trim();
+  const input = document.getElementById("input").value.trim();
   const out = document.getElementById("output");
-  out.textContent = "";
+  out.innerHTML = "";
+  lastResult = "";
 
   try {
-    const u = new URL(input);
-    const host = u.host.toLowerCase();
+    if (!input) throw "Pega una URL primero";
 
-    let lat, lon;
+    const url = new URL(input);
+    const host = url.host.toLowerCase();
 
-    if (host.includes("apple.com")) {
-      const ll = u.searchParams.get("ll");
-      if (!ll) throw "No veo coordenadas ll= en URL de Apple Maps";
-      [lat, lon] = ll.split(",");
-      const google = "https://www.google.com/maps?q=" + lat + "," + lon;
-      out.innerHTML = `🔗 Google Maps: <a href="${google}" target="_blank">${google}</a>`;
+    const coords = extraerCoordenadas(url, input);
+    if (!coords) throw "No he podido encontrar coordenadas en la URL";
+
+    const { lat, lon } = coords;
+
+    let resultURL;
+
+    if (host.includes("google")) {
+      resultURL = `https://maps.apple.com/?ll=${lat},${lon}&q=${lat},${lon}`;
+      out.innerHTML = `🍎 Apple Maps:<br><a href="${resultURL}" target="_blank">${resultURL}</a>`;
     }
-    else if (host.includes("google.com")) {
-      const q = u.searchParams.get("q");
-      if (!q) throw "No veo ?q= en URL de Google Maps";
-      [lat, lon] = q.split(",");
-      const apple = "https://maps.apple.com/?ll=" + lat + "," + lon;
-      out.innerHTML = `🍎 Apple Maps: <a href="${apple}" target="_blank">${apple}</a>`;
+    else if (host.includes("apple")) {
+      resultURL = `https://www.google.com/maps?q=${lat},${lon}`;
+      out.innerHTML = `🌐 Google Maps:<br><a href="${resultURL}" target="_blank">${resultURL}</a>`;
     }
     else {
-      throw "URL desconocida. Pega un enlace de Apple o Google Maps";
+      throw "La URL no parece de Apple Maps ni Google Maps";
     }
+
+    lastResult = resultURL;
   }
   catch (e) {
-    out.textContent = "⚠️ Error: " + e;
+    out.innerHTML = `<span class="error">⚠️ ${e}</span>`;
   }
 }
-</script>
 
+function copiar() {
+  if (!lastResult) return;
+  navigator.clipboard.writeText(lastResult);
+}
+
+function extraerCoordenadas(url, raw) {
+
+  // 1️⃣ @lat,lon (Google desktop/mobile)
+  const atMatch = raw.match(/@(-?\d+(\.\d+)?),(-?\d+(\.\d+)?)/);
+  if (atMatch) {
+    return { lat: atMatch[1], lon: atMatch[3] };
+  }
+
+  // 2️⃣ !3dLAT!4dLON (Google place URLs)
+  const bangMatch = raw.match(/!3d(-?\d+(\.\d+)?)!4d(-?\d+(\.\d+)?)/);
+  if (bangMatch) {
+    return { lat: bangMatch[1], lon: bangMatch[3] };
+  }
+
+  // 3️⃣ q=lat,lon
+  const q = url.searchParams.get("q");
+  if (q && q.includes(",")) {
+    const [lat, lon] = q.split(",");
+    return { lat, lon };
+  }
+
+  // 4️⃣ ll=lat,lon (Apple Maps)
+  const ll = url.searchParams.get("ll");
+  if (ll && ll.includes(",")) {
+    const [lat, lon] = ll.split(",");
+    return { lat, lon };
+  }
+
+  return null;
+}
+</script>
 </body>
 </html>
 
