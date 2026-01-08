@@ -38,10 +38,18 @@ body {
   border: 1px solid var(--border);
 }
 
-.logo {
-  height: 64px;
-  margin-bottom: 16px;
+.logo-link {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
 }
+
+.logo {
+  height: 54px;
+  display: block;
+}
+
 
 h1 {
   margin: 0 0 10px;
@@ -121,9 +129,10 @@ button.secondary {
 </head>
 
 <body>
-  <<a href="https://albesatechsolutions.es">
-    <img src="ats.png" alt="Logo" class="logo">
-  </a>
+  <a href="https://albesatechsolutions.es" class="logo-link">
+  <img src="ats.png" alt="Logo" class="logo">
+</a>
+
 <div class="card">
   
   <h1>Convertidor Apple ↔ Google Maps</h1>
