@@ -50,7 +50,6 @@ body {
   display: block;
 }
 
-
 h1 {
   margin: 0 0 10px;
   font-size: 26px;
@@ -118,23 +117,16 @@ button.secondary {
 .error {
   color: #dc2626;
 }
-
-.footer {
-  margin-top: 18px;
-  font-size: 13px;
-  color: var(--muted);
-  text-align: center;
-}
 </style>
 </head>
 
 <body>
-  <a href="https://albesatechsolutions.es" class="logo-link">
+
+<a href="https://albesatechsolutions.es" class="logo-link">
   <img src="ats.png" alt="Logo" class="logo">
 </a>
 
 <div class="card">
-  
   <h1>Convertidor Apple ↔ Google Maps</h1>
   <p>Pega cualquier enlace real de Maps. Detectamos la coordenada correcta y generamos el otro enlace.</p>
 
@@ -163,11 +155,15 @@ function convertir() {
     const url = new URL(input);
     const host = url.host.toLowerCase();
 
+    // 🚫 Apple Maps short links
+    if (host === "maps.apple" || url.pathname.startsWith("/p/")) {
+      throw "Este es un enlace corto de Apple Maps. Ábrelo primero y copia la URL completa.";
+    }
+
     const coords = extraerCoordenadas(url, input);
     if (!coords) throw "No se han encontrado coordenadas en la URL";
 
     const { lat, lon } = coords;
-
     let resultURL;
 
     if (host.includes("google")) {
@@ -196,15 +192,18 @@ function copiar() {
 
 function extraerCoordenadas(url, raw) {
 
-  // 1️⃣ Google chincheta real !3dLAT!4dLON
+  // 1️⃣ Google chincheta real
   const bang = raw.match(/!3d(-?\d+(\.\d+)?)!4d(-?\d+(\.\d+)?)/);
   if (bang) return { lat: bang[1], lon: bang[3] };
 
-  // 2️⃣ Apple Maps coordinate=lat,lon
+  // 2️⃣ Apple Maps coordinate=lat%2Clon
   const coordinate = url.searchParams.get("coordinate");
-  if (coordinate && coordinate.includes(",")) {
-    const [lat, lon] = coordinate.split(",");
-    return { lat, lon };
+  if (coordinate) {
+    const decoded = decodeURIComponent(coordinate);
+    if (decoded.includes(",")) {
+      const [lat, lon] = decoded.split(",");
+      return { lat, lon };
+    }
   }
 
   // 3️⃣ q=lat,lon
